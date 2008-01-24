@@ -93,7 +93,8 @@ class Sonata:
         hwtgtstr = "hw: "
         deplist = []
         for f in hwlist:
-            hwtgtstr += self.writeTarget(mfile, f, deplist) + ' ' 
+            hwtgtstr += self.writeTarget(mfile, f, deplist) + ' '
+            deplist.append(f)
 
         mfile.write("\n")
         mfile.write(hwtgtstr + '\n')
@@ -191,7 +192,7 @@ class Modelsim:
         else:
             target = "%s/%s/behavioral.dat" % (workdir, fpre)
 
-        mfile.write("%s: " % target)
+        mfile.write("%s: %s/_info " % (target, workdir))
         for i in deplist:
             mfile.write("%s " % i[0])
 #        mfile.write("%s/ " % workdir)
@@ -228,7 +229,8 @@ class Modelsim:
         deplist = []
         for f in hwlist:
             hwtgtstr += self.writeTarget(mfile, f, deplist) + ' ' 
-
+            deplist.append(f)
+            
         mfile.write("\n")
         mfile.write(hwtgtstr + '\n')
 
@@ -261,6 +263,7 @@ class Modelsim:
         for w in self.workdirs:
             mfile.write("%s/:\n" % w)
             mfile.write("\tmkdir -p %s\n" % w)
+            mfile.write("%s/_info: %s/ \n" % (w, w))
             mfile.write("\ttouch  %s/_info\n" % w)
 
 
