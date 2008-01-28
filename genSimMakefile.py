@@ -22,6 +22,34 @@ import re
 archRE = re.compile("architecture (.+) of", re.IGNORECASE)
 packageRE = re.compile("package (.+) is", re.IGNORECASE)
 
+
+class ParseVHDL(object):
+    def __init__(self, filename):
+        self.filename = filename
+
+
+    def getEntity(self):
+        """
+        Return the first entity defined in the file
+        """
+
+        fid = file(self.filename)
+        entityre = re.compile("entity (\w+) is", re.IGNORECASE)
+
+        matches = entityre.search(fid.read())
+        self.entityname =  matches.groups()[0]
+        return self.entityname
+    def getArch(self):
+        
+        fid = file(self.filename)
+        entityre = re.compile("architecture (\w+) of %s is" % self.entityname,
+                              re.IGNORECASE)
+
+        matches = entityre.search(fid.read())
+        self.archname =  matches.groups()[0]
+        return self.archname.lower()
+    
+    
 class Sonata: 
     def writeTarget(self, mfile, f, deplist= []):
         if len(f) > 1:
@@ -153,6 +181,7 @@ class Sonata:
 class Modelsim:
     def __init__(self):
         self.workdirs = set()
+        self.workdirs.add("work")
         
     def writeTarget(self, mfile, f, deplist= []):
         if len(f) > 1:
@@ -179,7 +208,14 @@ class Modelsim:
             #archtype = packagename
 
         fname = os.path.basename(filename)
-        fpre = fname.split(".")[0].lower()
+        pv = ParseVHDL(filename)
+
+        if isPackage:
+            fpre = fname.split(".")[0].lower()
+        else:
+            fpre = pv.getEntity()
+                    
+        
         mfile.write("\n")
         if worklib == None:
             workdir = "$(WORKDIR)"
@@ -190,12 +226,12 @@ class Modelsim:
         if isPackage:
             target = "%s/%s/body.dat" % (workdir, fpre)
         else:
-            target = "%s/%s/behavioral.dat" % (workdir, fpre)
+            target = "%s/%s/%s.dat" % (workdir, fpre, pv.getArch())
 
-        mfile.write("%s: %s/_info " % (target, workdir))
+        mfile.write("%s: %s/touched " %  (target, workdir))
         for i in deplist:
             mfile.write("%s " % i[0])
-#        mfile.write("%s/ " % workdir)
+            
         mfile.write("%s\n" % filename)
         if worklib:
             mfile.write("\tmkdir -p %s\n" % workdir) 
@@ -214,6 +250,7 @@ class Modelsim:
         # first, standard header:
         VHDLC = "vcom"
         VHDLS = "vsim"
+        VHDLL = "vlib"
         WORKDIR = "work"
 
         if toplevel.strip() == "":
@@ -261,10 +298,9 @@ class Modelsim:
 
         # now add the workdirs
         for w in self.workdirs:
-            mfile.write("%s/:\n" % w)
-            mfile.write("\tmkdir -p %s\n" % w)
-            mfile.write("%s/_info: %s/ \n" % (w, w))
-            mfile.write("\ttouch  %s/_info\n" % w)
+            mfile.write("%s/touched:\n" % w)
+            mfile.write("\t%s  %s\n" % (VHDLL, w))
+            mfile.write("\ttouch  %s/touched\n" % (w,))
 
 
         mfile.close()
