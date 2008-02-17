@@ -159,6 +159,7 @@ class Sonata:
         hwlist = []
         complist = []
         simlist = []
+        alwayslist = []
         toplevel = ""
         current = hwlist
         for f in fl:
@@ -169,6 +170,8 @@ class Sonata:
                 current = complist
             elif f == "sim:":
                 current = simlist
+            elif f == "always:":
+                current = alwayslist
             elif f == "":
                 pass
             elif f[0:9] =="toplevel:" :
@@ -176,7 +179,7 @@ class Sonata:
             else:
                 current.append(f.split())
 
-        return (hwlist, complist, simlist, toplevel)
+        return (hwlist, complist, simlist, alwayslist, toplevel)
 
 class Modelsim:
     def __init__(self):
@@ -245,7 +248,7 @@ class Modelsim:
 
         return target
 
-    def genMake(self, hwlist, complist, simlist, toplevel ):
+    def genMake(self, hwlist, complist, simlist, alwayslist, toplevel ):
         mfile = file("Makefile", 'w')
         # first, standard header:
         VHDLC = "vcom"
@@ -260,7 +263,12 @@ class Modelsim:
         mfile.write("VHDLS=%s\n" % VHDLS)
         mfile.write("WORKDIR=%s\n" % WORKDIR)
 
-        mfile.write("all: hw comp sim\n")
+        mfile.write("all: hw comp sim")
+        if len(alwayslist) > 0:
+            mfile.write(" always")
+        mfile.write("\n")
+        
+            
 
         hwtgtstr = "hw: "
         deplist = []
@@ -302,7 +310,14 @@ class Modelsim:
             mfile.write("\t%s  %s\n" % (VHDLL, w))
             mfile.write("\ttouch  %s/touched\n" % (w,))
 
+        # now add the always
 
+        if len(alwayslist) > 0:
+            mfile.write("always:\n")
+            for a in alwayslist:
+                mfile.write("\t")
+                mfile.write(" ".join(a))
+                mfile.write("\n")
         mfile.close()
 
     def parseFile(self, fname):
@@ -312,6 +327,7 @@ class Modelsim:
         hwlist = []
         complist = []
         simlist = []
+        alwayslist = []
         toplevel = ""
         current = hwlist
         for f in fl:
@@ -322,6 +338,8 @@ class Modelsim:
                 current = complist
             elif f == "sim:":
                 current = simlist
+            elif f == "always:":
+                current = alwayslist
             elif f == "":
                 pass
             elif f[0:9] =="toplevel:" :
@@ -329,10 +347,10 @@ class Modelsim:
             else:
                 current.append(f.split())
 
-        return (hwlist, complist, simlist, toplevel)
+        return (hwlist, complist, simlist, alwayslist, toplevel)
 
 filename = sys.argv[1]
 compileset = Modelsim()
-(hwlist, complist, simlist, toplevel) = compileset.parseFile(filename)
+(hwlist, complist, simlist, alwayslist,  toplevel) = compileset.parseFile(filename)
 
-compileset.genMake(hwlist, complist, simlist, toplevel)
+compileset.genMake(hwlist, complist, simlist, alwayslist, toplevel)
