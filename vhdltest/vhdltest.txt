@@ -1,0 +1,23 @@
+Overview of our modelsim design and test framework for unit testing of vhdl projects. 
+
+
+For each compontent in the system, we create a 
+"simulations" directory
+
+Under there, each simulation simname is a simulation of a specific component. 
+
+There can be more than one simname for a component, although ideally each component would instead have a suite of tests. 
+
+inside, each has a simname.do file that is a do file for modelsim which contains all the necessary commands. 
+
+
+All tests continually check data, and when they fail raise an assert error of severity failure, which we detect and record. 
+
+Once we've received an error, we kill the program. 
+
+
+
+
+Things to do: 
+  * if compile fails, modelsim halts
+
