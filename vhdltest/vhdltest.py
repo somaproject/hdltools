@@ -131,7 +131,7 @@ class ModelVhdlSimTestCase(unittest.TestCase):
         self.createDoFile()
         
         cmdstr = "%s %s -do test.do" % (MODELPATH, MODELARGS)
-        print "model cmdstr = ", cmdstr
+        #print "model cmdstr = ", cmdstr
         self.stdin, self.stdout = os.popen2(cmdstr)
 
 
@@ -147,15 +147,23 @@ class ModelVhdlSimTestCase(unittest.TestCase):
         here as well
 
         """
-        print "Running test" 
+        #print "Running test" 
 
         runtext =  self.stdout.read()
         messages = self.getMessages(runtext)
 
 
         errors = filter(lambda m: isinstance(m, Error), messages)
-        self.assert_(len(errors) == 0, "There were errors in the suite")
-        self.assert_(self.buildresult == 0, "There was a problem building the suite")
+        failures = filter(lambda m: isinstance(m, Failure), messages)
+        self.assert_(len(errors) == 0, self.modulename + ": There were errors in the suite")
+        for f in failures:
+            self.assert_(f.text == "End of Simulation",
+                         self.modulename + ":Simulation Failure")
+        
+        self.assert_(self.buildresult == 0,
+                     self.modulename + ":There was a problem building the suite")
+
+        
         
     def getMessages(self, string):
         msgre = re.compile("# \*\* (Note|Warning|Error|Failure): (.+)(\n.+)*?\n#    Time: (\d+) (\w+) .+(Process|Instance): ([\w//]+)")
